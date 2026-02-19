@@ -1,0 +1,39 @@
+You are an AI agent to integrate Crow onto a website. You have access to Crow’s docs via an MCP server. At every step in this process, please refer to Crow’s docs as a guide to how to put Crow on to this website.
+
+Step 1: Understand the codebase. Crow is a system that makes any website AI-native by allowing an AI agent on the web to connect to different backend APIs, client-side tools, and page navigation. You need to fully understand all the backend APIs of this app, client-side tools, and relevant pages (routes) of this app. 
+
+Step 1.5 Set up Crow. Look up Crow’s quickstart on the MCP server. In a file called CrowSetup.tsx, dynamically inject the script tag needed for crow, the user will input the necessary keys/API information (data-api-url etc), you don’t need to do that.
+
+Step 2: Determine if identity verification is needed. If the website uses any sort of user-login/user authorization for certain actions, we’ll need to set up identity verification. Look up in the Crow MCP server exactly how to do this. Create a server-side route that takes the user’s existing id or auth token, validates the user, and mints a new JWT token with a CROW_VERIFICATION_SECRET (user will input, should assume it is an environment variable). On the client side, in the CrowSetup.tsx, look up how to set the client-side part of identity verification on the Crow docs.
+
+Step 3: Set context using window.crow(‘setContext’) for relevant app changes. Look it up on the Crow MCP server.
+
+Step 4: Set up client-side tools. This is important. We need to produce two outputs: 1. a client-tools.json in a folder created for Crow called crowai, and 2. window.crow(‘registerTools’) for every single client side tool. You need to go ahead and determine all the relevant clientside tools this app can have. For instance, for a different page, example tools are like exportListResultsToCsv etc. All client side tools should be stuff that can be done in the website. Make a list of them, then write the client-tools.json by viewing an example on the Crow MCP docs. Then, from there, register each tool in CrowSetup. Ensure the client tools json format is exactly like this: a JSON, with tools as a key and an array as a value, with Crow MCP docs showing how to declare each tool specifically.
+
+example, this would be stored as the tools array, and each tool is an entry in this array.
+[{
+  "name": "exportListToCSV",
+  "description": "Export the current list to a CSV file. Downloads directly to the user's browser.",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "fileName": { "type": "string", "description": "Name for the CSV file" }
+    },
+    "required": []
+  }
+}]
+
+Step 4: Set up server-side routes. Now, we need to determine all the relevant APIs we want the Crow agent to have access to. If the API needs a user authentication, it is best to make a new, thin-wrapper around the API (like a new route that Crow can call) that uses Crow’s OpenAPI authentication (see docs). Accordingly, write in the crowai folder a file called openapispec.yaml. Follow all instructions on the Crow docs on how to do that and create any necessary routes. For user-specific routes, the new route should be something that takes in the Crow JWT, decodes it, and then calls the old route with it, because the frontend will be passing in the Crow JWT. Then, go ahead and register all server side tools in Crow as well. Look at the docs for how. 
+There are two important things to note here.
+1. If something can be done with a server side tool (i.e. create a blog post instead of prefilling a blog post with a client-side tool), do it with the server side tool.
+2. If identity verification is used, every single server side tool must have a crow wrapper/check the docs for how to do the JWT decoding, but must must accept a crow JWT token and decode it to match the users. If the server side tools auth is not necessary, it still must accept the crow JWT token and just run it regardless with decoding not necessary. Anything that doesn't need log in should be done with a client side tool, not a server side one.
+
+The openapi spec should only contain server side routes. And all client side tools should be contained in client-tools.json. Ensure we don't confuse them. client-side tools are great for navigation, exporting stuff, simple JS stuff. Anything that requires backend/requests/POST requests/authentication should be on the server.
+
+Step 5: Page-navigation. If there are pages to navigate in the app, in the crowai folder, produce a CSV file of everything according to the Crow MCP docs (https://docs.usecrow.ai/page-navigation). The CSV should be name, path, description format. 
+
+Step 6: Mounting and putting it together. Ensure on the CrowSetup file that crow.open is called for every page to open the crow widget. Then add CrowSetup as a render-null component inside the app’s provider tree so it runs on every single page.
+
+Step 7: Please generate a system prompt for this AI assistant. The system prompt should inform the AI assistant of its context (you are a helpful agent that assists users in __), available tools, etc and provide a good user experience.
+
+Step 8: At the end of everything, in the root working directory (not inside any client or server folder), create a file called PR.md that serves as a pull request description of every change you have made and how you've integrated Crow.
